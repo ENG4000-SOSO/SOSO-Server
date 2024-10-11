@@ -8,7 +8,7 @@ services:
       context: ./ # The build context for each service is the current folder and not the service's folder because the requirements.txt is in the current folder and needs to be copied by the Dockerfile into the container.
       dockerfile: ./event_relay_api/Dockerfile
     ports:
-      - 80:5000
+      - 5001:5001
     env_file:
       - .env
     depends_on:

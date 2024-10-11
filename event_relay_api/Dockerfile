@@ -12,7 +12,20 @@ RUN apk update
 RUN apk add git
 
 # install gcc and other build tools
-# RUN sudo apt install build-essential 
+# RUN sudo apt install build-essential
+RUN apk update && \
+    apk add --no-cache \
+        build-base \        
+        gcc \               
+        musl-dev \          
+        libffi-dev \        
+        openssl-dev \        
+        git \                
+        cargo \
+        cmake 
+RUN apk add --no-cache openblas-dev
+ENV BLAS=/usr/lib/libopenblas.a
+ENV LAPACK=/usr/lib/libopenblas.a
 
 RUN pip install --upgrade pip
 

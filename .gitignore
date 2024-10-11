@@ -17,3 +17,6 @@ MockFTPService/Sample Image Orders/.DS_Store
 pso-test.py
 .DS_Store
 node_modules
+
+
+venv/

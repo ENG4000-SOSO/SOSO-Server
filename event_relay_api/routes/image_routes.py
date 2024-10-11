@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Body, Depends, Query, HTTPException, Response
 from helpers.request_validation_helper import validate_request_schema
-from event_relay_api.models.image_request_model import ImageRequest
-from event_relay_api.models.event_relay_data import EventRelayApiMessage, RequestDetails
+from models.image_request_model import ImageRequest
+from models.event_relay_data import EventRelayApiMessage, RequestDetails
 from app_config import rabbit, ServiceQueues
 from rabbit_wrapper import TopicPublisher
 from app_config import get_db_session
 from app_config.database.mapping import ImageOrder
 from helpers.request_validation_helper import validate_request_schema
-from event_relay_api.models.image_request_model import ImageRequest
-from event_relay_api.models.event_relay_data import EventRelayApiMessage, RequestDetails
+from models.image_request_model import ImageRequest
+from models.event_relay_data import EventRelayApiMessage, RequestDetails
 from app_config.database.mapping import ImageOrder, ScheduleRequest, Asset
 from app_config import get_db_session
 from sqlalchemy import and_
