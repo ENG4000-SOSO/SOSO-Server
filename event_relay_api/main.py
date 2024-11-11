@@ -8,7 +8,9 @@ from routes.asset_routes import router as asset_router
 from routes.schedule_routes import router as schedule_router
 from routes.outage_routes import router as outage_router
 from routes.maintenance_router import router as maintenance_router
+from routes.jwt_routes import router as jwt_router
 from helpers.request_validation_helper import HttpErrorHandler
+from middleware.jwt_middleware import JWTAuthorizationMiddleware
 import uvicorn
 
 
@@ -34,8 +36,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.add_middleware(JWTAuthorizationMiddleware)
+
 add_pagination(app)
 
+app.include_router(jwt_router, tags=["JWT Authorization"], prefix="/auth")
 app.include_router(satellite_activity_router, tags=["Satellite Operation"], prefix="/assets/satellites")
 app.include_router(asset_router, tags=["Asset Creation"], prefix="/assets")
 app.include_router(schedule_router, tags=["Schedule Interactions"], prefix="/schedules")
