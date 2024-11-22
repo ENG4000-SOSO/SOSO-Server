@@ -47,7 +47,17 @@ CREATE TABLE IF NOT EXISTS schedule_lock (
 
 
 -- ================== Asset Tables ==================
-CREATE TYPE asset_type AS ENUM ('satellite', 'groundstation');
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM pg_type 
+        WHERE typname = 'asset_type'
+    ) THEN
+        CREATE TYPE asset_type AS ENUM ('satellite', 'groundstation');
+    END IF;
+END $$;
+-- CREATE TYPE asset_type AS ENUM ('satellite', 'groundstation');
 CREATE TABLE IF NOT EXISTS asset (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     name text UNIQUE NOT NULL,
@@ -91,7 +101,17 @@ EXECUTE FUNCTION set_default_name('satellite');
 -- ================== End of Asset Tables ==================
 
 -- ================== Order Tables ==================
-CREATE TYPE order_type AS ENUM ('imaging', 'maintenance', 'outage');
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM pg_type 
+        WHERE typname = 'order_type'
+    ) THEN
+        CREATE TYPE order_type AS ENUM ('imaging', 'maintenance', 'outage');
+    END IF;
+END $$;
+-- CREATE TYPE order_type AS ENUM ('imaging', 'maintenance', 'outage');
 -- abstract table. do not define constraints on this (including primary/foreign key constraints), as it won't be inherited by the children
 CREATE TABLE IF NOT EXISTS system_order (
 	id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -123,7 +143,17 @@ CREATE TABLE IF NOT EXISTS transmitted_order (
     CONSTRAINT valid_downlink_size CHECK (downlink_size >= 0)
 ) INHERITS (system_order);
 
-CREATE TYPE image_type AS ENUM ('low', 'medium', 'spotlight');
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM pg_type 
+        WHERE typname = 'image_type'
+    ) THEN
+        CREATE TYPE image_type AS ENUM ('low', 'medium', 'spotlight');
+    END IF;
+END $$;
+-- CREATE TYPE image_type AS ENUM ('low', 'medium', 'spotlight');
 CREATE TABLE IF NOT EXISTS image_order (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     schedule_id integer REFERENCES schedule (id),
@@ -219,7 +249,17 @@ EXECUTE FUNCTION set_default_delivery_deadline();
 -- These tables are for tracking what time periods in which we have completely processed the capture or contact opportunities
 -- This is necessary as we have the requirement that we should be able to accomodate for changing reference time (which will mean we have to compute past contacts potentially)
 -- so tracking this allows us to be able to do that without having to recompute everything from scratch or do redundant work
-CREATE TYPE processing_status AS ENUM ('processing', 'processed');
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM pg_type 
+        WHERE typname = 'processing_status'
+    ) THEN
+        CREATE TYPE processing_status AS ENUM ('processing', 'processed');
+    END IF;
+END $$;
+-- CREATE TYPE processing_status AS ENUM ('processing', 'processed');
 CREATE TABLE IF NOT EXISTS capture_processing_block (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY, -- only here so we will be able to automap the table in sqlalchemy. a key is not really needed.
     satellite_id integer REFERENCES satellite (id) NOT NULL,
@@ -262,7 +302,17 @@ CREATE TABLE IF NOT EXISTS ground_station_request (
 CREATE INDEX IF NOT EXISTS ground_station_request_signal_acquisition_index ON ground_station_request (signal_acquisition_time);
 CREATE INDEX IF NOT EXISTS ground_station_request_signal_loss_index ON ground_station_request (signal_loss_time);
 
-CREATE TYPE schedule_request_status AS ENUM ('received', 'processing', 'rejected', 'declined', 'displaced', 'scheduled', 'sent_to_gs');
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM pg_type 
+        WHERE typname = 'schedule_request_status'
+    ) THEN
+        CREATE TYPE schedule_request_status AS ENUM ('received', 'processing', 'rejected', 'declined', 'displaced', 'scheduled', 'sent_to_gs');
+    END IF;
+END $$;
+-- CREATE TYPE schedule_request_status AS ENUM ('received', 'processing', 'rejected', 'declined', 'displaced', 'scheduled', 'sent_to_gs');
 CREATE TABLE IF NOT EXISTS schedule_request (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     schedule_id integer NOT NULL REFERENCES schedule (id),
@@ -287,7 +337,17 @@ CREATE TABLE IF NOT EXISTS schedule_request (
     -- UNIQUE (order_type, order_id, window_start)
 );
 
-CREATE TYPE event_type AS ENUM ('imaging', 'maintenance', 'sat_outage', 'gs_outage', 'transmission_outage', 'contact', 'eclipse', 'capture');
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM pg_type 
+        WHERE typname = 'event_type'
+    ) THEN
+        CREATE TYPE event_type AS ENUM ('imaging', 'maintenance', 'sat_outage', 'gs_outage', 'transmission_outage', 'contact', 'eclipse', 'capture');
+    END IF;
+END $$;
+-- CREATE TYPE event_type AS ENUM ('imaging', 'maintenance', 'sat_outage', 'gs_outage', 'transmission_outage', 'contact', 'eclipse', 'capture');
 
 -- ================== Abstract tables for Scheduled Events ==================
 -- NOTE: Do not define constraints on these tables (including primary/foreign key constraints), as it won't be inherited by the children
@@ -375,10 +435,25 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER populate_contact_event_rates_trigger
-BEFORE INSERT ON contact_event
-FOR EACH ROW
-EXECUTE FUNCTION populate_contact_event_rates();
+DO $$
+BEGIN
+    -- Check if the trigger exists
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_trigger
+        WHERE tgname = 'populate_contact_event_rates_trigger'
+    ) THEN
+        -- Create the trigger if it does not exist
+        CREATE TRIGGER populate_contact_event_rates_trigger
+		BEFORE INSERT ON contact_event
+		FOR EACH ROW
+		EXECUTE FUNCTION populate_contact_event_rates();
+    END IF;
+END $$;
+-- CREATE TRIGGER populate_contact_event_rates_trigger
+-- BEFORE INSERT ON contact_event
+-- FOR EACH ROW
+-- EXECUTE FUNCTION populate_contact_event_rates();
 
 CREATE INDEX IF NOT EXISTS contact_event_start_time_index ON contact_event (start_time);
 CREATE INDEX IF NOT EXISTS contact_event_asset_index ON contact_event (asset_id);
@@ -525,13 +600,42 @@ CREATE TABLE IF NOT EXISTS scheduled_imaging (
     event_type event_type DEFAULT 'imaging'::event_type NOT NULL CHECK (event_type = 'imaging')
 ) INHERITS (transmitted_event);
 
-CREATE TRIGGER increment_contact_transmitted_data_size_trigger
-AFTER INSERT ON scheduled_imaging
-FOR EACH ROW EXECUTE FUNCTION increment_contact_transmitted_data_size();
+DO $$
+BEGIN
+    -- Check if the trigger exists
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_trigger
+        WHERE tgname = 'increment_contact_transmitted_data_size_trigger'
+    ) THEN
+        -- Create the trigger if it does not exist
+		CREATE TRIGGER increment_contact_transmitted_data_size_trigger
+		AFTER INSERT ON scheduled_imaging
+		FOR EACH ROW EXECUTE FUNCTION increment_contact_transmitted_data_size();
+    END IF;
+END $$;
+-- CREATE TRIGGER increment_contact_transmitted_data_size_trigger
+-- AFTER INSERT ON scheduled_imaging
+-- FOR EACH ROW EXECUTE FUNCTION increment_contact_transmitted_data_size();
 
-CREATE TRIGGER decrement_contact_transmitted_data_size_trigger
-AFTER DELETE ON scheduled_imaging
-FOR EACH ROW EXECUTE FUNCTION decrement_contact_transmitted_data_size();
+
+DO $$
+BEGIN
+    -- Check if the trigger exists
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_trigger
+        WHERE tgname = 'decrement_contact_transmitted_data_size_trigger'
+    ) THEN
+        -- Create the trigger if it does not exist
+		CREATE TRIGGER decrement_contact_transmitted_data_size_trigger
+		AFTER DELETE ON scheduled_imaging
+		FOR EACH ROW EXECUTE FUNCTION decrement_contact_transmitted_data_size();
+    END IF;
+END $$;
+-- CREATE TRIGGER decrement_contact_transmitted_data_size_trigger
+-- AFTER DELETE ON scheduled_imaging
+-- FOR EACH ROW EXECUTE FUNCTION decrement_contact_transmitted_data_size();
 
 CREATE TABLE IF NOT EXISTS scheduled_maintenance (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -546,13 +650,43 @@ CREATE TABLE IF NOT EXISTS scheduled_maintenance (
     event_type event_type DEFAULT 'maintenance'::event_type NOT NULL CHECK (event_type = 'maintenance')
 ) INHERITS (transmitted_event);
 
-CREATE TRIGGER increment_contact_transmitted_data_size_trigger
-AFTER INSERT ON scheduled_maintenance
-FOR EACH ROW EXECUTE FUNCTION increment_contact_transmitted_data_size();
 
-CREATE TRIGGER decrement_contact_transmitted_data_size_trigger
-AFTER DELETE ON scheduled_maintenance
-FOR EACH ROW EXECUTE FUNCTION decrement_contact_transmitted_data_size();
+DO $$
+BEGIN
+    -- Check if the trigger exists
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_trigger
+        WHERE tgname = 'increment_contact_transmitted_data_size_trigger'
+    ) THEN
+        -- Create the trigger if it does not exist
+		CREATE TRIGGER increment_contact_transmitted_data_size_trigger
+		AFTER INSERT ON scheduled_maintenance
+		FOR EACH ROW EXECUTE FUNCTION increment_contact_transmitted_data_size();
+    END IF;
+END $$;
+-- CREATE TRIGGER increment_contact_transmitted_data_size_trigger
+-- AFTER INSERT ON scheduled_maintenance
+-- FOR EACH ROW EXECUTE FUNCTION increment_contact_transmitted_data_size();
+
+
+DO $$
+BEGIN
+    -- Check if the trigger exists
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_trigger
+        WHERE tgname = 'decrement_contact_transmitted_data_size_trigger'
+    ) THEN
+        -- Create the trigger if it does not exist
+		CREATE TRIGGER decrement_contact_transmitted_data_size_trigger
+		AFTER DELETE ON scheduled_maintenance
+		FOR EACH ROW EXECUTE FUNCTION decrement_contact_transmitted_data_size();
+    END IF;
+END $$;
+-- CREATE TRIGGER decrement_contact_transmitted_data_size_trigger
+-- AFTER DELETE ON scheduled_maintenance
+-- FOR EACH ROW EXECUTE FUNCTION decrement_contact_transmitted_data_size();
 
 CREATE TABLE IF NOT EXISTS outbound_schedule(
 	id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -564,14 +698,30 @@ CREATE TABLE IF NOT EXISTS outbound_schedule(
 	downlink_activities json,
 	schedule_status text DEFAULT NULL --"created" at creation, "updated" when a change is made , "sent_to_gs" when sent to the ground station, "cancelled" when cancelled
 );
-
-CREATE TYPE asset_state AS (
-    storage double precision,
-    storage_util double precision,
-    throughput double precision,
-    energy_usage double precision,
-    power_draw double precision
-);
+DO $$
+BEGIN
+	IF NOT EXISTS(
+		SELECT 1
+		FROM pg_type
+		WHERE typname = 'asset_state'
+	)THEN
+		CREATE TYPE asset_state AS (
+		    storage double precision,
+		    storage_util double precision,
+		    throughput double precision,
+		    energy_usage double precision,
+		    power_draw double precision
+		);
+	END IF;
+END $$;
+		
+-- CREATE TYPE asset_state AS (
+--     storage double precision,
+--     storage_util double precision,
+--     throughput double precision,
+--     energy_usage double precision,
+--     power_draw double precision
+-- );
 
 CREATE OR REPLACE FUNCTION default_asset_state()
 RETURNS asset_state AS $$
@@ -596,22 +746,41 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE AGGREGATE sum (asset_state)
+CREATE OR REPLACE AGGREGATE sum (asset_state)
 (
     sfunc = add_asset_states,
     stype = asset_state,
     initcond = '(0.0, 0.0, 0.0, 0.0, 0.0)'
 );
 
-CREATE OPERATOR + (
-    leftarg = asset_state,
-    rightarg = asset_state,
-    function = add_asset_states,
-    commutator = +
-);
+DO $$
+BEGIN
+    -- Check if the operator "+" for "asset_state" exists
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_operator
+        WHERE oprname = '+' 
+          AND oprleft = 'asset_state'::regtype 
+          AND oprright = 'asset_state'::regtype
+    ) THEN
+        -- Create the operator if it doesn't exist
+        CREATE OPERATOR + (
+            leftarg = asset_state,
+            rightarg = asset_state,
+            function = add_asset_states,
+            commutator = +
+        );
+    END IF;
+END $$;
+-- CREATE OPERATOR + (
+--     leftarg = asset_state,
+--     rightarg = asset_state,
+--     function = add_asset_states,
+--     commutator = +
+-- );
 
 -- TODO: This view below can be optimized by turning it into a table, and adding triggers for whenever new relevant events are added, to ensure the data stays consistent. This speeds up the whole scheduling algorithm as the algorithm depends on this table heavily
-CREATE VIEW eventwise_asset_state_change AS
+CREATE OR REPLACE VIEW eventwise_asset_state_change AS
     -- Three cases where the satellite's state changes. (calculate your state_delta in it's respective case, and leave it as 0)
     -- CASE 1: when we are uplinking the command (e.g. command to take image is uplinked)
     SELECT transmitted_event.schedule_id,
@@ -717,7 +886,7 @@ CREATE VIEW eventwise_asset_state_change AS
         eclipse.start_time,
         eclipse.duration;
 
-CREATE VIEW satellite_state_change AS
+CREATE OR REPLACE VIEW satellite_state_change AS
 SELECT event_change.schedule_id, 
     event_change.asset_id, 
     event_change.asset_type,
@@ -740,7 +909,7 @@ GROUP BY event_change.schedule_id, event_change.asset_type, event_change.asset_i
 -- CREATE INDEX IF NOT EXISTS schedule_index ON satellite_state_change (schedule_id); -- useful when calculating average satellite utilization for example - you want events for all satellites within the same schedule
 
 
-CREATE VIEW ground_station_state_change AS
+CREATE OR REPLACE VIEW ground_station_state_change AS
 SELECT event_change.schedule_id,
     event_change.asset_id, 
     event_change.asset_type,
@@ -785,3 +954,6 @@ INSERT INTO state_checkpoint (
     -- (5.0, 10.0, 15.0, 0.0)::asset_state, -- cumulative_change
     -- (2.0, 4.0, 6.0, 0.0)::asset_state -- peak_cumulative_change
 );
+
+
+
