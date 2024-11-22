@@ -955,5 +955,10 @@ INSERT INTO state_checkpoint (
     -- (2.0, 4.0, 6.0, 0.0)::asset_state -- peak_cumulative_change
 );
 
-
+Create Table if Not Exists users (
+	user_id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+	username varchar(50) UNIQUE NOT NULL,
+	password_hash varchar(255) not null,
+	last_login timestamp null 
+);
 
